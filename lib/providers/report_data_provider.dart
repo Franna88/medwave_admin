@@ -46,6 +46,7 @@ class ReportDataProvider with ChangeNotifier {
     required String description,
     required ReportType type,
     String template = 'default',
+    Map<String, dynamic> filters = const {},
   }) {
     final newReport = Report(
       id: const Uuid().v4(),
@@ -55,6 +56,7 @@ class ReportDataProvider with ChangeNotifier {
       createdAt: DateTime.now(),
       createdBy: 'Admin',
       template: template,
+      filters: filters,
     );
 
     _reports.add(newReport);

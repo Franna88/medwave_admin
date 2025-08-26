@@ -18,6 +18,7 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
   String _packageFilter = 'All';
   bool _showOnlyApproved = false;
   bool _showOnlyPending = false;
+  String? _selectedCountry; // Add country filter state
 
   @override
   Widget build(BuildContext context) {
@@ -422,6 +423,28 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
           ),
           const SizedBox(height: 20),
           
+          // Country Filter
+          Row(
+            children: [
+              Icon(Icons.public, color: AppTheme.secondaryColor, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                'Country Filter:',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _buildCountryFilterChip('All Countries', _selectedCountry == null),
+              const SizedBox(width: 8),
+              _buildCountryFilterChip('🇺🇸 USA', _selectedCountry == 'USA'),
+              const SizedBox(width: 8),
+              _buildCountryFilterChip('🇿🇦 RSA', _selectedCountry == 'RSA'),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
           // Package Filter
           Row(
             children: [
@@ -488,6 +511,57 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
                 color: isSelected ? Colors.white : AppTheme.textColor,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountryFilterChip(String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (label == 'All Countries') {
+            _selectedCountry = null;
+          } else if (label == '🇺🇸 USA') {
+            _selectedCountry = 'USA';
+          } else if (label == '🇿🇦 RSA') {
+            _selectedCountry = 'RSA';
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+            width: 1.5,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ] : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              Icon(Icons.check, color: Colors.white, size: 14),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.textColor,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
           ],
@@ -684,6 +758,15 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
               ),
               const SizedBox(width: 12),
               
+              // Country Flag
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                child: Text(
+                  _getCountryFlag(provider.country),
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+              
               // Provider Info
               Expanded(
                 child: Column(
@@ -739,6 +822,19 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
                               color: AppTheme.secondaryColor,
                             ),
                             overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.public, size: 12, color: AppTheme.secondaryColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          provider.country,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.secondaryColor,
                           ),
                         ),
                       ],
@@ -823,7 +919,16 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
     );
   }
 
-
+  String _getCountryFlag(String country) {
+    switch (country) {
+      case 'USA':
+        return '🇺🇸';
+      case 'RSA':
+        return '🇿🇦';
+      default:
+        return '🌍'; // Default flag for unknown countries
+    }
+  }
 
   List<Provider> _getFilteredProviders(ProviderDataProvider providerProvider) {
     List<Provider> providers = providerProvider.providers;
@@ -838,6 +943,11 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
     // Apply package filter
     if (_packageFilter != 'All') {
       providers = providers.where((p) => p.package.contains(_packageFilter)).toList();
+    }
+
+    // Apply country filter
+    if (_selectedCountry != null) {
+      providers = providers.where((p) => p.country == _selectedCountry).toList();
     }
 
     // Apply search filter

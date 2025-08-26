@@ -14,6 +14,7 @@ class ProviderApprovalsScreen extends StatefulWidget {
 
 class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
   String _filterStatus = 'all'; // all, pending, approved, rejected
+  String? _selectedCountry; // Add country filter state
 
   @override
   void initState() {
@@ -84,49 +85,149 @@ class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Filter by status:',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: DropdownButtonFormField<String>(
-              value: _filterStatus,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          // Status Filter
+          Row(
+            children: [
+              const Text(
+                'Filter by status:',
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              items: const [
-                DropdownMenuItem(value: 'all', child: Text('All Applications')),
-                DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _filterStatus = value!;
-                });
-              },
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _filterStatus,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('All Applications')),
+                    DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                    DropdownMenuItem(value: 'approved', child: Text('Approved')),
+                    DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _filterStatus = value!;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Country Filter
+          Row(
+            children: [
+              const Text(
+                'Filter by country:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 16),
+              _buildCountryFilterChip('USA', '🇺🇸'),
+              const SizedBox(width: 8),
+              _buildCountryFilterChip('RSA', '🇿🇦'),
+              const SizedBox(width: 8),
+              if (_selectedCountry != null)
+                _buildClearCountryFilterChip(),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildCountryFilterChip(String country, String flag) {
+    final isSelected = _selectedCountry == country;
+    
+    return FilterChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(flag),
+          const SizedBox(width: 3),
+          Text(country),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _selectedCountry = selected ? country : null;
+        });
+      },
+      backgroundColor: Colors.grey[100],
+      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+      checkmarkColor: AppTheme.primaryColor,
+      side: BorderSide(
+        color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!,
+      ),
+      labelStyle: TextStyle(
+        color: isSelected ? AppTheme.primaryColor : Colors.black87,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        fontSize: 12,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  Widget _buildClearCountryFilterChip() {
+    return FilterChip(
+      label: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.clear, size: 12),
+          SizedBox(width: 3),
+          Text('Clear'),
+        ],
+      ),
+      selected: false,
+      onSelected: (selected) {
+        setState(() {
+          _selectedCountry = null;
+        });
+      },
+      backgroundColor: Colors.grey[100],
+      side: BorderSide(color: Colors.grey[300]!),
+      labelStyle: const TextStyle(
+        color: Colors.black87,
+        fontWeight: FontWeight.normal,
+        fontSize: 12,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
   List<Provider> _getFilteredProviders(List<Provider> providers) {
+    List<Provider> filteredProviders = providers;
+    
+    // Apply status filter
     switch (_filterStatus) {
       case 'pending':
-        return providers.where((p) => !p.isApproved).toList();
+        filteredProviders = filteredProviders.where((p) => !p.isApproved).toList();
+        break;
       case 'approved':
-        return providers.where((p) => p.isApproved).toList();
+        filteredProviders = filteredProviders.where((p) => p.isApproved).toList();
+        break;
       case 'rejected':
-        return providers.where((p) => p.isApproved == false && p.approvalDate != null).toList();
+        filteredProviders = filteredProviders.where((p) => p.isApproved == false && p.approvalDate != null).toList();
+        break;
       default:
-        return providers;
+        // 'all' - no status filtering
+        break;
     }
+    
+    // Apply country filter
+    if (_selectedCountry != null) {
+      filteredProviders = filteredProviders.where((p) => p.country == _selectedCountry).toList();
+    }
+    
+    return filteredProviders;
   }
 
   Widget _buildProviderCard(Provider provider, ProviderDataProvider providerProvider) {
@@ -136,6 +237,14 @@ class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
       child: ExpansionTile(
         title: Row(
           children: [
+            // Country Flag
+            Container(
+              margin: const EdgeInsets.only(right: 12),
+              child: Text(
+                _getCountryFlag(provider.country),
+                style: const TextStyle(fontSize: 20),
+              ),
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,9 +271,18 @@ class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            'Submitted: ${_formatDate(provider.registrationDate)}',
-            style: const TextStyle(fontSize: 12),
+          child: Row(
+            children: [
+              Text(
+                'Submitted: ${_formatDate(provider.registrationDate)}',
+                style: const TextStyle(fontSize: 12),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Country: ${provider.country}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
           ),
         ),
         children: [
@@ -217,6 +335,17 @@ class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
         ],
       ),
     );
+  }
+
+  String _getCountryFlag(String country) {
+    switch (country) {
+      case 'USA':
+        return '🇺🇸';
+      case 'RSA':
+        return '🇿🇦';
+      default:
+        return '🌍'; // Default flag for unknown countries
+    }
   }
 
   Widget _buildStatusChip(Provider provider) {

@@ -156,12 +156,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen>
         isSelected: true,
       ),
       _NavigationItem(
-        icon: Icons.people_outline,
-        activeIcon: Icons.people,
-        label: 'Patient Management',
-        isSelected: false,
-      ),
-      _NavigationItem(
         icon: Icons.assessment_outlined,
         activeIcon: Icons.assessment,
         label: 'Report Builder',
@@ -248,24 +242,17 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen>
           (route) => false,
         );
         break;
-      case 'Patient Management':
-        // Navigate to patient management with index 3
+      case 'Report Builder':
+        // Navigate to report builder with index 3
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const DashboardScreen(initialIndex: 3)),
           (route) => false,
         );
         break;
-      case 'Report Builder':
-        // Navigate to report builder with index 4
+      case 'Analytics':
+        // Navigate to analytics with index 4
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const DashboardScreen(initialIndex: 4)),
-          (route) => false,
-        );
-        break;
-      case 'Analytics':
-        // Navigate to analytics with index 5
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const DashboardScreen(initialIndex: 5)),
           (route) => false,
         );
         break;
@@ -629,6 +616,12 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen>
                             color: AppTheme.textColor,
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        // Country Flag
+                        Text(
+                          _getCountryFlag(widget.provider.country),
+                          style: const TextStyle(fontSize: 20),
+                        ),
                         const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -664,6 +657,8 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen>
                         _buildInfoItem(Icons.email_outlined, widget.provider.email),
                         const SizedBox(width: 24),
                         _buildInfoItem(Icons.phone_outlined, widget.provider.directPhoneNumber),
+                        const SizedBox(width: 24),
+                        _buildInfoItem(Icons.public, widget.provider.country),
                       ],
                     ),
                   ],
@@ -2027,6 +2022,17 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen>
         builder: (context) => PatientDashboardScreen(patient: patient),
       ),
     );
+  }
+
+  String _getCountryFlag(String country) {
+    switch (country) {
+      case 'USA':
+        return '🇺🇸';
+      case 'RSA':
+        return '🇿🇦';
+      default:
+        return '🌍'; // Default flag for unknown countries
+    }
   }
 }
 

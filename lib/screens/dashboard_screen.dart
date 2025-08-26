@@ -25,6 +25,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late int _selectedIndex;
+  String? _selectedCountry; // Add country filter state
   
   @override
   void initState() {
@@ -86,6 +87,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: AppTheme.textColor,
             ),
           ),
+          const SizedBox(width: 24),
+          
+          // Country Filters (only show on dashboard) - Flexible to prevent overflow
+          if (_selectedIndex == 0) 
+            Flexible(
+              child: _buildCountryFilters(),
+            ),
+          
           const Spacer(),
           
           // User Menu
@@ -93,6 +102,120 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildCountryFilters() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Filter by Country:',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: AppTheme.secondaryColor,
+          ),
+        ),
+        const SizedBox(width: 8),
+        
+        // Filter chips in a compact row
+        Flexible(
+          child: Wrap(
+            spacing: 6, // Reduced spacing
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              // USA Filter
+              _buildFilterChip('USA', '🇺🇸'),
+              
+              // RSA Filter
+              _buildFilterChip('RSA', '🇿🇦'),
+              
+              // Clear Filter - will stay in same row if possible
+              if (_selectedCountry != null)
+                _buildClearFilterChip(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String country, String flag) {
+    final isSelected = _selectedCountry == country;
+    
+    return FilterChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(flag),
+          const SizedBox(width: 3), // Reduced spacing
+          Text(country),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _selectedCountry = selected ? country : null;
+        });
+        // Notify providers about the filter change
+        _applyCountryFilter();
+      },
+      backgroundColor: AppTheme.cardColor,
+      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+      checkmarkColor: AppTheme.primaryColor,
+      side: BorderSide(
+        color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+      ),
+      labelStyle: TextStyle(
+        color: isSelected ? AppTheme.primaryColor : AppTheme.textColor,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        fontSize: 12, // Even smaller font size
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // More compact padding
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // More compact
+    );
+  }
+
+  Widget _buildClearFilterChip() {
+    return FilterChip(
+      label: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.clear, size: 12), // Smaller icon
+          SizedBox(width: 3), // Reduced spacing
+          Text('Clear'),
+        ],
+      ),
+      selected: false,
+      onSelected: (selected) {
+        setState(() {
+          _selectedCountry = null;
+        });
+        // Notify providers about the filter change
+        _applyCountryFilter();
+      },
+      backgroundColor: AppTheme.cardColor,
+      side: BorderSide(color: AppTheme.borderColor),
+      labelStyle: TextStyle(
+        color: AppTheme.textColor,
+        fontWeight: FontWeight.normal,
+        fontSize: 12, // Even smaller font size
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // More compact padding
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // More compact
+    );
+  }
+
+  void _applyCountryFilter() {
+    // Notify providers about the country filter change
+    // This will allow the providers to filter their data accordingly
+    if (_selectedIndex == 0) {
+      // Refresh dashboard data with country filter
+      Provider.of<ProviderDataProvider>(context, listen: false)
+          .setCountryFilter(_selectedCountry);
+      Provider.of<PatientDataProvider>(context, listen: false)
+          .setCountryFilter(_selectedCountry);
+    }
   }
 
   Widget _buildUserMenu() {

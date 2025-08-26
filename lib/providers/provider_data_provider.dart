@@ -6,10 +6,29 @@ class ProviderDataProvider extends ChangeNotifier {
   List<Provider> _providers = [];
   List<Provider> _pendingApprovals = [];
   bool _isLoading = false;
+  String? _countryFilter; // Add country filter
 
   List<Provider> get providers => [..._providers, ..._pendingApprovals];
   List<Provider> get pendingApprovals => _pendingApprovals;
   bool get isLoading => _isLoading;
+  
+  // Get filtered providers based on country
+  List<Provider> get filteredProviders {
+    if (_countryFilter == null) return providers;
+    return providers.where((provider) => provider.country == _countryFilter).toList();
+  }
+  
+  // Get filtered approved providers
+  List<Provider> get filteredApprovedProviders {
+    if (_countryFilter == null) return _providers;
+    return _providers.where((provider) => provider.country == _countryFilter).toList();
+  }
+  
+  // Get filtered pending approvals
+  List<Provider> get filteredPendingApprovals {
+    if (_countryFilter == null) return _pendingApprovals;
+    return _pendingApprovals.where((provider) => provider.country == _countryFilter).toList();
+  }
 
   ProviderDataProvider() {
     _loadMockData();
@@ -34,6 +53,7 @@ class ProviderDataProvider extends ChangeNotifier {
         isApproved: true,
         registrationDate: DateTime.now().subtract(const Duration(days: 30)),
         approvalDate: DateTime.now().subtract(const Duration(days: 25)),
+        country: 'USA',
       ),
       Provider(
         id: const Uuid().v4(),
@@ -51,6 +71,7 @@ class ProviderDataProvider extends ChangeNotifier {
         isApproved: true,
         registrationDate: DateTime.now().subtract(const Duration(days: 45)),
         approvalDate: DateTime.now().subtract(const Duration(days: 40)),
+        country: 'USA',
       ),
       Provider(
         id: const Uuid().v4(),
@@ -68,6 +89,43 @@ class ProviderDataProvider extends ChangeNotifier {
         isApproved: true,
         registrationDate: DateTime.now().subtract(const Duration(days: 60)),
         approvalDate: DateTime.now().subtract(const Duration(days: 55)),
+        country: 'USA',
+      ),
+      Provider(
+        id: const Uuid().v4(),
+        firstName: 'David',
+        lastName: 'Mbeki',
+        directPhoneNumber: '+27-11-123-4567',
+        email: 'david.mbeki@johannesburgclinic.co.za',
+        fullCompanyName: 'Mbeki Medical Clinic',
+        businessAddress: '123 Nelson Mandela Drive, Johannesburg, Gauteng 2000',
+        salesPerson: 'Sarah Wilson',
+        purchasePlan: 'Annual contract',
+        shippingAddress: '123 Nelson Mandela Drive, Johannesburg, Gauteng 2000',
+        package: 'Neuro-100S Panel + SoftWave',
+        additionalNotes: 'Leading clinic in Johannesburg',
+        isApproved: true,
+        registrationDate: DateTime.now().subtract(const Duration(days: 40)),
+        approvalDate: DateTime.now().subtract(const Duration(days: 35)),
+        country: 'RSA',
+      ),
+      Provider(
+        id: const Uuid().v4(),
+        firstName: 'Thandi',
+        lastName: 'Nkosi',
+        directPhoneNumber: '+27-21-987-6543',
+        email: 'thandi.nkosi@capetownwellness.co.za',
+        fullCompanyName: 'Nkosi Wellness Center',
+        businessAddress: '456 Long Street, Cape Town, Western Cape 8001',
+        salesPerson: 'David Brown',
+        purchasePlan: 'Monthly subscription',
+        shippingAddress: '456 Long Street, Cape Town, Western Cape 8001',
+        package: 'SoftWave + Endo-100S Panel',
+        additionalNotes: 'Premium wellness center in Cape Town',
+        isApproved: true,
+        registrationDate: DateTime.now().subtract(const Duration(days: 25)),
+        approvalDate: DateTime.now().subtract(const Duration(days: 20)),
+        country: 'RSA',
       ),
     ];
 
@@ -87,6 +145,7 @@ class ProviderDataProvider extends ChangeNotifier {
         additionalNotes: 'New clinic opening next month',
         isApproved: false,
         registrationDate: DateTime.now().subtract(const Duration(days: 5)),
+        country: 'USA',
       ),
       Provider(
         id: const Uuid().v4(),
@@ -103,6 +162,24 @@ class ProviderDataProvider extends ChangeNotifier {
         additionalNotes: 'Expanding practice, need additional licenses',
         isApproved: false,
         registrationDate: DateTime.now().subtract(const Duration(days: 3)),
+        country: 'USA',
+      ),
+      Provider(
+        id: const Uuid().v4(),
+        firstName: 'Sipho',
+        lastName: 'Dlamini',
+        directPhoneNumber: '+27-31-456-7890',
+        email: 'sipho.dlamini@durbanhealth.co.za',
+        fullCompanyName: 'Dlamini Health Solutions',
+        businessAddress: '789 Victoria Street, Durban, KwaZulu-Natal 4001',
+        salesPerson: 'Mike Johnson',
+        purchasePlan: 'Quarterly payment',
+        shippingAddress: '789 Victoria Street, Durban, KwaZulu-Natal 4001',
+        package: 'Contour-100S Panel',
+        additionalNotes: 'New health solutions provider in Durban',
+        isApproved: false,
+        registrationDate: DateTime.now().subtract(const Duration(days: 2)),
+        country: 'RSA',
       ),
     ];
 
@@ -242,8 +319,14 @@ class ProviderDataProvider extends ChangeNotifier {
     }).toList();
   }
 
-  // Analytics methods
-  int get totalProviders => _providers.length;
-  int get totalPendingApprovals => _pendingApprovals.length;
+  // Add country filter method
+  void setCountryFilter(String? country) {
+    _countryFilter = country;
+    notifyListeners();
+  }
+
+  // Analytics methods - update to use filtered data
+  int get totalProviders => filteredApprovedProviders.length;
+  int get totalPendingApprovals => filteredPendingApprovals.length;
   double get averageMonthlyRevenue => 35000.0; // Default value since we removed monthlyRevenue from model
 }

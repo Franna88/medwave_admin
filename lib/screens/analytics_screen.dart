@@ -20,6 +20,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   late TabController _tabController;
   String _selectedTimeRange = '30d';
   String _selectedMetric = 'all';
+  String? _selectedCountry; // Add country filter state
 
   @override
   void initState() {
@@ -150,6 +151,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               _buildEnhancedTimeRangeSelector(),
               const SizedBox(width: 16),
               _buildEnhancedMetricSelector(),
+              const SizedBox(width: 16),
+              _buildCountryFilterSelector(),
               const Spacer(),
               _buildExportButton(),
             ],
@@ -289,6 +292,47 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 setState(() {
                   _selectedMetric = value!;
                 });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountryFilterSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.public, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCountry,
+              dropdownColor: AppTheme.headerGradientEnd,
+              style: TextStyle(color: Colors.white),
+              hint: Text('All Countries', style: TextStyle(color: Colors.white.withOpacity(0.8))),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('All Countries')),
+                const DropdownMenuItem(value: 'USA', child: Text('🇺🇸 USA')),
+                const DropdownMenuItem(value: 'RSA', child: Text('🇿🇦 RSA')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedCountry = value;
+                });
+                // Apply country filter to providers
+                provider_package.Provider.of<ProviderDataProvider>(context, listen: false)
+                    .setCountryFilter(_selectedCountry);
+                provider_package.Provider.of<PatientDataProvider>(context, listen: false)
+                    .setCountryFilter(_selectedCountry);
               },
             ),
           ),

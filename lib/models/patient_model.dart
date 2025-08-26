@@ -14,6 +14,7 @@ class Patient {
   final List<ProgressRecord> progressRecords;
   final String notes;
   final bool isActive;
+  final String country; // Add country field
 
   Patient({
     required this.id,
@@ -29,6 +30,7 @@ class Patient {
     this.progressRecords = const [],
     this.notes = '',
     this.isActive = true,
+    this.country = 'USA', // Default to USA
   });
 
   factory Patient.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class Patient {
           .toList() ?? [],
       notes: json['notes'] ?? '',
       isActive: json['isActive'] ?? true,
+      country: json['country'] ?? 'USA',
     );
   }
 
@@ -71,6 +74,7 @@ class Patient {
       'progressRecords': progressRecords.map((record) => record.toJson()).toList(),
       'notes': notes,
       'isActive': isActive,
+      'country': country,
     };
   }
 
@@ -88,6 +92,7 @@ class Patient {
     List<ProgressRecord>? progressRecords,
     String? notes,
     bool? isActive,
+    String? country,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -103,6 +108,7 @@ class Patient {
       progressRecords: progressRecords ?? this.progressRecords,
       notes: notes ?? this.notes,
       isActive: isActive ?? this.isActive,
+      country: country ?? this.country,
     );
   }
 

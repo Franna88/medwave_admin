@@ -14,6 +14,7 @@ class Provider {
   final bool isApproved;
   final DateTime registrationDate;
   final DateTime? approvalDate;
+  final String country; // Add country field
 
   Provider({
     required this.id,
@@ -31,6 +32,7 @@ class Provider {
     this.isApproved = false,
     required this.registrationDate,
     this.approvalDate,
+    this.country = 'USA', // Default to USA
   });
 
   factory Provider.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,7 @@ class Provider {
       approvalDate: json['approvalDate'] != null 
           ? DateTime.parse(json['approvalDate']) 
           : null,
+      country: json['country'] ?? 'USA',
     );
   }
 
@@ -72,6 +75,7 @@ class Provider {
       'isApproved': isApproved,
       'registrationDate': registrationDate.toIso8601String(),
       'approvalDate': approvalDate?.toIso8601String(),
+      'country': country,
     };
   }
 
@@ -91,6 +95,7 @@ class Provider {
     bool? isApproved,
     DateTime? registrationDate,
     DateTime? approvalDate,
+    String? country,
   }) {
     return Provider(
       id: id ?? this.id,
@@ -108,6 +113,7 @@ class Provider {
       isApproved: isApproved ?? this.isApproved,
       registrationDate: registrationDate ?? this.registrationDate,
       approvalDate: approvalDate ?? this.approvalDate,
+      country: country ?? this.country,
     );
   }
 

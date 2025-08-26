@@ -5,9 +5,16 @@ import '../models/patient_model.dart';
 class PatientDataProvider extends ChangeNotifier {
   List<Patient> _patients = [];
   bool _isLoading = false;
+  String? _countryFilter; // Add country filter
 
   List<Patient> get patients => _patients;
   bool get isLoading => _isLoading;
+  
+  // Get filtered patients based on country
+  List<Patient> get filteredPatients {
+    if (_countryFilter == null) return _patients;
+    return _patients.where((patient) => patient.country == _countryFilter).toList();
+  }
 
   PatientDataProvider() {
     _loadMockData();
@@ -65,6 +72,7 @@ class PatientDataProvider extends ChangeNotifier {
           ),
         ],
         notes: 'Patient responding well to MedWave treatment',
+        country: 'USA',
       ),
       Patient(
         id: const Uuid().v4(),
@@ -119,6 +127,7 @@ class PatientDataProvider extends ChangeNotifier {
           ),
         ],
         notes: 'Excellent response to combined treatment approach',
+        country: 'USA',
       ),
       Patient(
         id: const Uuid().v4(),
@@ -175,6 +184,7 @@ class PatientDataProvider extends ChangeNotifier {
           ),
         ],
         notes: 'Successful weight loss treatment with MedWave technology',
+        country: 'USA',
       ),
       Patient(
         id: const Uuid().v4(),
@@ -216,9 +226,102 @@ class PatientDataProvider extends ChangeNotifier {
           ),
         ],
         notes: 'Surgical wound responding well to MedWave treatment',
+        country: 'USA',
+      ),
+      // Add RSA patients
+      Patient(
+        id: const Uuid().v4(),
+        providerId: 'provider4',
+        name: 'Nomsa Dlamini',
+        email: 'nomsa.dlamini@email.co.za',
+        phone: '+27-11-123-4567',
+        dateOfBirth: DateTime(1982, 9, 15),
+        gender: 'Female',
+        treatmentType: TreatmentType.woundHealing,
+        treatmentStartDate: DateTime.now().subtract(const Duration(days: 40)),
+        progressRecords: [
+          ProgressRecord(
+            date: DateTime.now().subtract(const Duration(days: 40)),
+            woundSize: 22.0,
+            woundDepth: 2.2,
+            woundDescription: 'Diabetic ulcer, left foot',
+            painLevel: 7.0,
+            mobilityScore: 35.0,
+            notes: 'Initial assessment from Johannesburg clinic',
+          ),
+          ProgressRecord(
+            date: DateTime.now().subtract(const Duration(days: 25)),
+            woundSize: 16.0,
+            woundDepth: 1.6,
+            woundDescription: 'Good granulation tissue formation',
+            painLevel: 5.0,
+            mobilityScore: 50.0,
+            notes: 'Responding well to MedWave treatment',
+          ),
+          ProgressRecord(
+            date: DateTime.now().subtract(const Duration(days: 10)),
+            woundSize: 10.0,
+            woundDepth: 1.0,
+            woundDescription: 'Significant improvement',
+            painLevel: 3.0,
+            mobilityScore: 70.0,
+            notes: 'Excellent progress',
+          ),
+        ],
+        notes: 'Patient from Johannesburg showing excellent response',
+        country: 'RSA',
+      ),
+      Patient(
+        id: const Uuid().v4(),
+        providerId: 'provider5',
+        name: 'Themba Nkosi',
+        email: 'themba.nkosi@email.co.za',
+        phone: '+27-21-987-6543',
+        dateOfBirth: DateTime(1975, 12, 3),
+        gender: 'Male',
+        treatmentType: TreatmentType.weightLoss,
+        treatmentStartDate: DateTime.now().subtract(const Duration(days: 70)),
+        progressRecords: [
+          ProgressRecord(
+            date: DateTime.now().subtract(const Duration(days: 70)),
+            weight: 92.0,
+            painLevel: 2.0,
+            mobilityScore: 65.0,
+            notes: 'Starting weight loss program in Cape Town',
+          ),
+          ProgressRecord(
+            date: DateTime.now().subtract(const Duration(days: 50)),
+            weight: 88.0,
+            painLevel: 1.0,
+            mobilityScore: 75.0,
+            notes: 'Good progress with weight loss',
+          ),
+          ProgressRecord(
+            date: DateTime.now().subtract(const Duration(days: 30)),
+            weight: 84.0,
+            painLevel: 0.0,
+            mobilityScore: 85.0,
+            notes: 'Excellent weight loss results',
+          ),
+          ProgressRecord(
+            date: DateTime.now().subtract(const Duration(days: 15)),
+            weight: 81.0,
+            painLevel: 0.0,
+            mobilityScore: 90.0,
+            notes: 'Target weight achieved',
+          ),
+        ],
+        notes: 'Successful weight loss treatment from Cape Town clinic',
+        country: 'RSA',
       ),
     ];
 
+    notifyListeners();
+  }
+
+  // Add country filter method
+  void setCountryFilter(String? country) {
+    _countryFilter = country;
     notifyListeners();
   }
 
@@ -309,31 +412,31 @@ class PatientDataProvider extends ChangeNotifier {
     return _patients.where((p) => p.treatmentType == type).toList();
   }
 
-  // Analytics methods
-  int get totalPatients => _patients.length;
-  int get activePatients => _patients.where((p) => p.isActive).length;
-  double get averageProgress => _patients.isEmpty 
+  // Analytics methods - update to use filtered data
+  int get totalPatients => filteredPatients.length;
+  int get activePatients => filteredPatients.where((p) => p.isActive).length;
+  double get averageProgress => filteredPatients.isEmpty 
       ? 0.0 
-      : _patients.map((p) => p.overallProgress).reduce((a, b) => a + b) / _patients.length;
+      : filteredPatients.map((p) => p.overallProgress).reduce((a, b) => a + b) / filteredPatients.length;
   
   int getPatientsByTreatmentTypeCount(TreatmentType type) {
-    return _patients.where((p) => p.treatmentType == type).length;
+    return filteredPatients.where((p) => p.treatmentType == type).length;
   }
 
   double getAverageProgressByTreatmentType(TreatmentType type) {
-    final typePatients = _patients.where((p) => p.treatmentType == type).toList();
+    final typePatients = filteredPatients.where((p) => p.treatmentType == type).toList();
     if (typePatients.isEmpty) return 0.0;
     return typePatients.map((p) => p.overallProgress).reduce((a, b) => a + b) / typePatients.length;
   }
 
   List<Patient> getTopPerformers(int count) {
-    final sortedPatients = List<Patient>.from(_patients)
+    final sortedPatients = List<Patient>.from(filteredPatients)
       ..sort((a, b) => b.overallProgress.compareTo(a.overallProgress));
     return sortedPatients.take(count).toList();
   }
 
   List<Patient> getRecentPatients(int days) {
     final cutoffDate = DateTime.now().subtract(Duration(days: days));
-    return _patients.where((p) => p.treatmentStartDate.isAfter(cutoffDate)).toList();
+    return filteredPatients.where((p) => p.treatmentStartDate.isAfter(cutoffDate)).toList();
   }
 }

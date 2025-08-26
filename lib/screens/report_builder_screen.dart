@@ -4,6 +4,8 @@ import 'package:drag_and_drop_lists/drag_and_drop_lists.dart';
 import 'package:intl/intl.dart';
 import '../models/report_model.dart';
 import '../providers/report_data_provider.dart';
+import '../providers/provider_data_provider.dart';
+import '../providers/patient_data_provider.dart';
 import '../theme/app_theme.dart';
 
 class ReportBuilderScreen extends StatefulWidget {
@@ -20,6 +22,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
   final _descriptionController = TextEditingController();
   ReportType _selectedReportType = ReportType.providerPerformance;
   String _selectedTemplate = 'default';
+  String? _selectedCountry; // Add country filter state
 
   @override
   void initState() {
@@ -416,6 +419,48 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
             ],
           ),
         ),
+        
+        // Country Filter Section
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: AppTheme.borderColor,
+                width: 1,
+              ),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.public, color: AppTheme.secondaryColor, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Country Filter:',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                ],
+              ),
+                             const SizedBox(height: 12),
+               Wrap(
+                 spacing: 8,
+                 runSpacing: 8,
+                 children: [
+                   _buildCountryFilterChip('All Countries', _selectedCountry == null, reportProvider),
+                   _buildCountryFilterChip('🇺🇸 USA', _selectedCountry == 'USA', reportProvider),
+                   _buildCountryFilterChip('🇿🇦 RSA', _selectedCountry == 'RSA', reportProvider),
+                 ],
+               ),
+            ],
+          ),
+        ),
+        
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(8),
@@ -549,6 +594,23 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
                         color: AppTheme.secondaryColor,
                       ),
                     ),
+                    // Show country filter if applied
+                    if (_selectedCountry != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.public, size: 14, color: AppTheme.primaryColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Filtered by: ${_getCountryFlag(_selectedCountry!)} $_selectedCountry',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -765,8 +827,17 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
                 ),
               ),
               const Spacer(),
+              OutlinedButton.icon(
+                onPressed: () => _showSortDialog(reportProvider),
+                icon: const Icon(Icons.sort, size: 18),
+                label: const Text('Sort'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
               ElevatedButton.icon(
-                onPressed: () => _createNewReport(reportProvider),
+                onPressed: () => _showNewReportDialog(reportProvider),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('New Report'),
                 style: ElevatedButton.styleFrom(
@@ -776,13 +847,40 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          
+          // Quick stats row
+          Row(
+            children: [
+              _buildReportStat(
+                icon: Icons.assessment_outlined,
+                label: 'Total',
+                value: '${reportProvider.reports.length}',
+                color: AppTheme.primaryColor,
+              ),
+              const SizedBox(width: 24),
+              _buildReportStat(
+                icon: Icons.published_with_changes,
+                label: 'Published',
+                value: '${reportProvider.getPublishedReports().length}',
+                color: AppTheme.successColor,
+              ),
+              const SizedBox(width: 24),
+              _buildReportStat(
+                icon: Icons.edit_note,
+                label: 'Drafts',
+                value: '${reportProvider.reports.where((r) => !r.isPublished).length}',
+                color: AppTheme.secondaryColor,
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
           
           if (reportProvider.reports.isEmpty)
             _buildEmptyReportsState()
           else
             SizedBox(
-              height: MediaQuery.of(context).size.height - 400, // Adjust for header, tab bar, and padding
+              height: MediaQuery.of(context).size.height - 480, // Adjust for header, tab bar, stats, and padding
               child: _buildReportsList(reportProvider),
             ),
         ],
@@ -833,22 +931,31 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
   }
 
   Widget _buildReportCard(Report report, ReportDataProvider reportProvider) {
+    final isCurrentReport = reportProvider.currentReport?.id == report.id;
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: ListTile(
+      elevation: isCurrentReport ? 4 : 2,
+      color: isCurrentReport ? AppTheme.primaryColor.withOpacity(0.05) : null,
+      child: InkWell(
+        onTap: () => _loadReportAndSwitchTab(report, reportProvider),
+        borderRadius: BorderRadius.circular(12),
+        child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
-          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+          backgroundColor: isCurrentReport 
+              ? AppTheme.primaryColor 
+              : AppTheme.primaryColor.withOpacity(0.1),
           child: Icon(
             _getReportTypeIcon(report.type),
-            color: AppTheme.primaryColor,
+            color: isCurrentReport ? Colors.white : AppTheme.primaryColor,
           ),
         ),
         title: Text(
           report.title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppTheme.textColor,
+            color: isCurrentReport ? AppTheme.primaryColor : AppTheme.textColor,
           ),
         ),
         subtitle: Column(
@@ -910,78 +1017,118 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
                 color: AppTheme.secondaryColor,
               ),
             ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) => _handleReportAction(value, report, reportProvider),
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 18),
-                  SizedBox(width: 8),
-                  Text('Edit'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'duplicate',
-              child: Row(
-                children: [
-                  Icon(Icons.copy_outlined, size: 18),
-                  SizedBox(width: 8),
-                  Text('Duplicate'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'export',
-              child: Row(
-                children: [
-                  Icon(Icons.download_outlined, size: 18),
-                  SizedBox(width: 8),
-                  Text('Export'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'preview',
-              child: Row(
-                children: [
-                  Icon(Icons.preview_outlined, size: 18),
-                  SizedBox(width: 8),
-                  Text('Preview'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: report.isPublished ? 'unpublish' : 'publish',
-              child: Row(
-                children: [
-                  Icon(
-                    report.isPublished ? Icons.visibility_off_outlined : Icons.publish_outlined,
-                    size: 18,
+            if (isCurrentReport) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Currently Editing',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.primaryColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 8),
-                  Text(report.isPublished ? 'Unpublish' : 'Publish'),
-                ],
+                ),
               ),
-            ),
-            const PopupMenuDivider(),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outlined, size: 18, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: Colors.red)),
-                ],
+            ],
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isCurrentReport)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Active',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
+            const SizedBox(width: 8),
+            PopupMenuButton<String>(
+              onSelected: (value) => _handleReportAction(value, report, reportProvider),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Edit'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'duplicate',
+                  child: Row(
+                    children: [
+                      Icon(Icons.copy_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Duplicate'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'export',
+                  child: Row(
+                    children: [
+                      Icon(Icons.download_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Export'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'preview',
+                  child: Row(
+                    children: [
+                      Icon(Icons.preview_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Preview'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: report.isPublished ? 'unpublish' : 'publish',
+                  child: Row(
+                    children: [
+                      Icon(
+                        report.isPublished ? Icons.visibility_off_outlined : Icons.publish_outlined,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(report.isPublished ? 'Unpublish' : 'Publish'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outlined, size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        onTap: () => reportProvider.loadReport(report.id),
+        ),
       ),
     );
   }
@@ -1043,6 +1190,85 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
     }
   }
 
+  String _getCountryFlag(String country) {
+    switch (country) {
+      case 'USA':
+        return '🇺🇸';
+      case 'RSA':
+        return '🇿🇦';
+      default:
+        return '🌍'; // Default flag for unknown countries
+    }
+  }
+
+  Widget _buildCountryFilterChip(String label, bool isSelected, ReportDataProvider reportProvider) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (label == 'All Countries') {
+            _selectedCountry = null;
+          } else if (label == '🇺🇸 USA') {
+            _selectedCountry = 'USA';
+          } else if (label == '🇿🇦 RSA') {
+            _selectedCountry = 'RSA';
+          }
+        });
+        
+        // Apply country filter to data providers
+        Provider.of<ProviderDataProvider>(context, listen: false)
+            .setCountryFilter(_selectedCountry);
+        Provider.of<PatientDataProvider>(context, listen: false)
+            .setCountryFilter(_selectedCountry);
+            
+        // Update report filters if there's a current report
+        if (reportProvider.currentReport != null) {
+          final updatedFilters = Map<String, dynamic>.from(reportProvider.currentReport!.filters);
+          if (_selectedCountry != null) {
+            updatedFilters['country'] = _selectedCountry;
+          } else {
+            updatedFilters.remove('country');
+          }
+          reportProvider.updateCurrentReport(filters: updatedFilters);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+            width: 1.5,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ] : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              Icon(Icons.check, color: Colors.white, size: 14),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.textColor,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Action methods
   void _createNewReport(ReportDataProvider reportProvider) {
     if (_titleController.text.isEmpty) {
@@ -1052,16 +1278,44 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
       return;
     }
 
+    final title = _titleController.text;
+    final description = _descriptionController.text;
+
+    // Create filters map with country filter if selected
+    final Map<String, dynamic> filters = {};
+    if (_selectedCountry != null) {
+      filters['country'] = _selectedCountry;
+    }
+
     reportProvider.createNewReport(
-      title: _titleController.text,
-      description: _descriptionController.text,
+      title: title,
+      description: description,
       type: _selectedReportType,
       template: _selectedTemplate,
+      filters: filters,
     );
+
+    // Apply country filter to data providers
+    Provider.of<ProviderDataProvider>(context, listen: false)
+        .setCountryFilter(_selectedCountry);
+    Provider.of<PatientDataProvider>(context, listen: false)
+        .setCountryFilter(_selectedCountry);
+
+    // Update the current report with filters
+    if (reportProvider.currentReport != null) {
+      reportProvider.updateCurrentReport(filters: filters);
+    }
 
     _titleController.clear();
     _descriptionController.clear();
-    _tabController.animateTo(0);
+    _tabController.animateTo(0); // Switch to Report Builder tab
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Created new report: $title'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
 
@@ -1097,15 +1351,43 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
     );
   }
 
+  void _loadReportAndSwitchTab(Report report, ReportDataProvider reportProvider) {
+    reportProvider.loadReport(report.id);
+    
+    // Load country filter from report filters
+    setState(() {
+      _selectedCountry = report.filters['country'] as String?;
+    });
+    
+    // Apply country filter to data providers
+    Provider.of<ProviderDataProvider>(context, listen: false)
+        .setCountryFilter(_selectedCountry);
+    Provider.of<PatientDataProvider>(context, listen: false)
+        .setCountryFilter(_selectedCountry);
+    
+    _tabController.animateTo(0); // Switch to Report Builder tab
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Loaded report: ${report.title}'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _handleReportAction(String action, Report report, ReportDataProvider reportProvider) {
     switch (action) {
       case 'edit':
-        reportProvider.loadReport(report.id);
-        _tabController.animateTo(0);
+        _loadReportAndSwitchTab(report, reportProvider);
         break;
       case 'duplicate':
         reportProvider.duplicateReport(report.id);
         _tabController.animateTo(0);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Duplicated report: ${report.title}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
         break;
       case 'export':
         _showExportDialog(report);
@@ -1116,6 +1398,12 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
       case 'publish':
       case 'unpublish':
         reportProvider.toggleReportPublish(report.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(report.isPublished ? 'Report unpublished' : 'Report published'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
         break;
       case 'delete':
         _showDeleteDialog(report, reportProvider);
@@ -1242,6 +1530,205 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen>
     // TODO: Implement PDF export
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('PDF export functionality coming soon!')),
+    );
+  }
+
+  void _showNewReportDialog(ReportDataProvider reportProvider) {
+    // Reset form controllers
+    _titleController.clear();
+    _descriptionController.clear();
+    _selectedReportType = ReportType.providerPerformance;
+    _selectedTemplate = 'default';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create New Report'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Report Title',
+                  hintText: 'Enter report title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Enter report description',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<ReportType>(
+                value: _selectedReportType,
+                decoration: const InputDecoration(
+                  labelText: 'Report Type',
+                  border: OutlineInputBorder(),
+                ),
+                items: ReportType.values.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(_getReportTypeDisplayName(type)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedReportType = value!;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedTemplate,
+                decoration: const InputDecoration(
+                  labelText: 'Template',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'default', child: Text('Default')),
+                  DropdownMenuItem(value: 'professional', child: Text('Professional')),
+                  DropdownMenuItem(value: 'minimal', child: Text('Minimal')),
+                  DropdownMenuItem(value: 'executive', child: Text('Executive')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedTemplate = value!;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_titleController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a report title')),
+                );
+                return;
+              }
+              
+              Navigator.of(context).pop();
+              _createNewReport(reportProvider);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportStat({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.secondaryColor,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showSortDialog(ReportDataProvider reportProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sort Reports'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: const Text('Date Created (Newest First)'),
+              onTap: () {
+                Navigator.of(context).pop();
+                // TODO: Implement sorting in ReportDataProvider
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sorting by date created')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: const Text('Date Created (Oldest First)'),
+              onTap: () {
+                Navigator.of(context).pop();
+                // TODO: Implement sorting in ReportDataProvider
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sorting by date created')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sort_by_alpha),
+              title: const Text('Title (A-Z)'),
+              onTap: () {
+                Navigator.of(context).pop();
+                // TODO: Implement sorting in ReportDataProvider
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sorting by title')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sort_by_alpha),
+              title: const Text('Title (Z-A)'),
+              onTap: () {
+                Navigator.of(context).pop();
+                // TODO: Implement sorting in ReportDataProvider
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sorting by title')),
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
     );
   }
 
