@@ -48,6 +48,12 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       label: 'Analytics',
       index: 4,
     ),
+    NavigationItem(
+      icon: Icons.campaign_outlined,
+      activeIcon: Icons.campaign,
+      label: 'Advert Performance',
+      index: 5,
+    ),
   ];
 
   @override

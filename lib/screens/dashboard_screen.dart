@@ -10,6 +10,7 @@ import 'provider_approvals_screen.dart';
 import 'provider_management_screen.dart';
 import 'report_builder_screen.dart';
 import 'analytics_screen.dart';
+import 'advert_performance_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int initialIndex;
@@ -323,6 +324,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const ReportBuilderScreen();
       case 4:
         return const AnalyticsScreen();
+      case 5:
+        return const AdvertPerformanceScreen();
       default:
         return const DashboardOverview();
     }
@@ -340,6 +343,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return 'Report Builder';
       case 4:
         return 'Analytics';
+      case 5:
+        return 'Advert Performance Stats';
       default:
         return 'Dashboard';
     }
