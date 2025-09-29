@@ -7,8 +7,15 @@ import 'package:medwave_admin/providers/patient_data_provider.dart';
 import 'package:medwave_admin/providers/report_data_provider.dart';
 import 'package:medwave_admin/screens/login_screen.dart';
 import 'package:medwave_admin/screens/dashboard_screen.dart';
+import 'package:medwave_admin/services/firebase/firebase_config.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase before running the app
+  await FirebaseConfig.initializeFirebase();
+  
   runApp(const MedwaveAdminApp());
 }
 

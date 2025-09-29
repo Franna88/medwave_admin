@@ -18,19 +18,41 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="MedWave Admin Panel - Wound Care Management System">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="medwave_admin">
+  <meta name="apple-mobile-web-app-title" content="MedWave Admin">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>medwave_admin</title>
+  <title>MedWave Admin Panel</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Firebase Configuration -->
+  <script type="module">
+    // Firebase configuration for MedWave Admin Panel
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+    import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+    import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC_medx_ai_web_api_key", // Replace with actual medx.ai web API key
+      authDomain: "medx-ai.firebaseapp.com",
+      projectId: "medx-ai",
+      storageBucket: "medx-ai.firebasestorage.app",
+      messagingSenderId: "987654321", // Replace with actual medx.ai messaging sender ID
+      appId: "1:987654321:web:medx_ai_web_app_id" // Replace with actual medx.ai web app ID
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    window.firebaseApp = app;
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

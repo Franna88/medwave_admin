@@ -109,7 +109,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen>
       child: Row(
         children: [
           Image.asset(
-            'images/medwave_logo_black.png',
+            'images/medwave_logo_grey.png',
             height: 40,
             width: 120,
             fit: BoxFit.contain,

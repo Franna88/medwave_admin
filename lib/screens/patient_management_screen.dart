@@ -22,6 +22,58 @@ class _PatientManagementScreenState extends State<PatientManagementScreen> {
   Widget build(BuildContext context) {
     return provider_package.Consumer<PatientDataProvider>(
       builder: (context, patientProvider, child) {
+        // Show error if patient data fails to load
+        if (patientProvider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade600, size: 64),
+                const SizedBox(height: 16),
+                Text(
+                  'Error Loading Patient Data',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.red.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  patientProvider.error!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.red.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => patientProvider.refresh(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show loading state while Firebase data is loading
+        if (patientProvider.isLoading) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Loading patient data from Firebase...'),
+              ],
+            ),
+          );
+        }
+
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(

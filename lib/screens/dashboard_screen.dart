@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/patient_data_provider.dart';
@@ -10,6 +11,8 @@ import 'provider_approvals_screen.dart';
 import 'provider_management_screen.dart';
 import 'report_builder_screen.dart';
 import 'analytics_screen.dart';
+import 'patient_management_screen.dart';
+import 'admin_management_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int initialIndex;
@@ -31,6 +34,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
+    
+    // Initialize data providers after authentication
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeDataProviders();
+    });
+  }
+
+  void _initializeDataProviders() {
+    if (kDebugMode) {
+      print('🎯 DashboardScreen: _initializeDataProviders() called');
+    }
+    final providerDataProvider = context.read<ProviderDataProvider>();
+    final patientDataProvider = context.read<PatientDataProvider>();
+    
+    if (kDebugMode) {
+      print('🎯 DashboardScreen: Initializing ProviderDataProvider...');
+    }
+    // Initialize Firebase streams for both providers
+    providerDataProvider.initializeAfterAuth();
+    
+    if (kDebugMode) {
+      print('🎯 DashboardScreen: Refreshing PatientDataProvider...');
+    }
+    patientDataProvider.refresh(); // This should initialize its Firebase streams
+    
+    if (kDebugMode) {
+      print('🎯 DashboardScreen: Data providers initialization complete');
+    }
   }
 
   @override
@@ -323,6 +354,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const ReportBuilderScreen();
       case 4:
         return const AnalyticsScreen();
+      case 5:
+        return const PatientManagementScreen();
+      case 6:
+        return const AdminManagementScreen();
       default:
         return const DashboardOverview();
     }
@@ -340,6 +375,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return 'Report Builder';
       case 4:
         return 'Analytics';
+      case 5:
+        return 'Patient Management';
+      case 6:
+        return 'Admin Management';
       default:
         return 'Dashboard';
     }

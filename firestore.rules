@@ -1,0 +1,146 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.email != null && 
+             request.auth.token.email.matches('.*@medwave\\.co\\.za');
+    }
+    
+    // Helper function to check if user has admin role (for users who don't have @medwave.co.za email)
+    function hasAdminRole() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super_admin', 'country_admin'];
+    }
+    
+    // Users collection - practitioners and admins
+    match /users/{userId} {
+      // Users can read/write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Admins can read/write all user profiles
+      allow read, write: if isAdmin() || hasAdminRole();
+      
+      // Allow access to user's subcollections (notifications, etc.)
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAdmin() || hasAdminRole();
+      }
+    }
+    
+    // Patients collection
+    match /patients/{patientId} {
+      // Practitioners can read/write patients they created
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.practitionerId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.practitionerId;
+      
+      // Admins can access all patients
+      allow read, write: if isAdmin() || hasAdminRole();
+      
+      // Patient sessions subcollection
+      match /sessions/{sessionId} {
+        // Practitioners can access sessions for their patients
+        allow read, write: if request.auth != null && request.auth.uid == resource.data.practitionerId;
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.practitionerId;
+        
+        // Also allow reading/writing sessions for patients they own
+        allow read, write: if request.auth != null && 
+          request.auth.uid == get(/databases/$(database)/documents/patients/$(resource.data.patientId)).data.practitionerId;
+        
+        // Admins can access all sessions
+        allow read, write: if isAdmin() || hasAdminRole();
+      }
+    }
+    
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      // Practitioners can read/write their own appointments
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.practitionerId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.practitionerId;
+      
+      // Admins can access all appointments
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Sessions collection (if separate from patient subcollection)
+    match /sessions/{sessionId} {
+      // Practitioners can access sessions they created
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.practitionerId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.practitionerId;
+      
+      // Also allow reading/writing sessions for patients they own
+      allow read, write: if request.auth != null && 
+        request.auth.uid == get(/databases/$(database)/documents/patients/$(resource.data.patientId)).data.practitionerId;
+      
+      // Admins can access all sessions
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Practitioners can read/write their own notifications
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      
+      // Admins can access all notifications
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Practitioner Applications - for approval workflow (CRITICAL FOR ADMIN PANEL)
+    match /practitionerApplications/{applicationId} {
+      // Applicants can create and read their own applications
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Admins can read/write all applications (NEEDED FOR APPROVAL WORKFLOW)
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Providers collection (for admin management)
+    match /providers/{providerId} {
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Reports collection (for admin analytics)
+    match /reports/{reportId} {
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Analytics collection (for admin dashboard)
+    match /analytics/{analyticsId} {
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Additional collections needed by admin portal
+    
+    // Country analytics for dashboard metrics
+    match /country_analytics/{countryId} {
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // System configuration and settings
+    match /system_config/{configId} {
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Activity logs for admin monitoring
+    match /activity_logs/{logId} {
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Admin user management logs
+    match /admin_logs/{logId} {
+      allow read, write: if isAdmin() || hasAdminRole();
+    }
+    
+    // Temporary rule for development - any collection not covered above
+    // TODO: Remove in production and add specific rules for each collection
+    match /{document=**} {
+      allow read: if isAdmin() || hasAdminRole();
+    }
+  }
+}

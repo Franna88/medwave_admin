@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider_package;
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import '../models/patient_model.dart';
 import '../models/provider_model.dart';
 import '../providers/patient_data_provider.dart';
@@ -38,6 +37,58 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   Widget build(BuildContext context) {
     return provider_package.Consumer2<PatientDataProvider, ProviderDataProvider>(
       builder: (context, patientProvider, providerProvider, child) {
+        // Show error if provider data fails to load
+        if (providerProvider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade600, size: 64),
+                const SizedBox(height: 16),
+                Text(
+                  'Error Loading Analytics Data',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.red.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  providerProvider.error!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.red.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => providerProvider.refresh(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show loading state while Firebase data is loading
+        if (providerProvider.isLoading) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Loading analytics data from Firebase...'),
+              ],
+            ),
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -324,15 +375,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 const DropdownMenuItem(value: 'USA', child: Text('🇺🇸 USA')),
                 const DropdownMenuItem(value: 'RSA', child: Text('🇿🇦 RSA')),
               ],
-              onChanged: (value) {
+              onChanged: (value) async {
                 setState(() {
                   _selectedCountry = value;
                 });
                 // Apply country filter to providers
-                provider_package.Provider.of<ProviderDataProvider>(context, listen: false)
+                await provider_package.Provider.of<ProviderDataProvider>(context, listen: false)
                     .setCountryFilter(_selectedCountry);
-                provider_package.Provider.of<PatientDataProvider>(context, listen: false)
-                    .setCountryFilter(_selectedCountry);
+                // Note: PatientDataProvider doesn't have setCountryFilter yet
+                // TODO: Implement setCountryFilter in PatientDataProvider when we get to Phase 5
               },
             ),
           ),
@@ -415,13 +466,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildKeyMetricsRow(PatientDataProvider patientProvider, ProviderDataProvider providerProvider) {
-    final patients = patientProvider.patients;
-    final providers = providerProvider.providers;
+    final patients = patientProvider.filteredPatients;
+    final providers = providerProvider.filteredApprovedProviders;
+    final pendingApprovals = providerProvider.filteredPendingApprovals;
     
     final totalPatients = patients.length;
     final activePatients = patients.where((p) => p.isActive).length;
     final totalProviders = providers.length;
-    final approvedProviders = providers.where((p) => p.isApproved).length;
+    final totalPending = pendingApprovals.length;
     
     return Row(
       children: [
@@ -441,7 +493,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             totalProviders.toString(),
             Icons.medical_services,
             AppTheme.successColor,
-            '${approvedProviders} approved',
+            '${totalPending} pending approval',
           ),
         ),
         const SizedBox(width: 16),
@@ -457,11 +509,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         const SizedBox(width: 16),
         Expanded(
           child: _buildMetricCard(
-            'Success Rate',
-            '${_calculateSuccessRate(patients).toStringAsFixed(1)}%',
-            Icons.trending_up,
+            'Monthly Revenue',
+            '\$${(providerProvider.averageMonthlyRevenue / 1000).toStringAsFixed(0)}K',
+            Icons.attach_money,
             AppTheme.greenColor,
-            'Treatment completion',
+            'From ${totalProviders} providers',
           ),
         ),
       ],

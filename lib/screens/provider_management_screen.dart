@@ -950,9 +950,9 @@ class _ProviderManagementScreenState extends State<ProviderManagementScreen> {
       providers = providers.where((p) => p.country == _selectedCountry).toList();
     }
 
-    // Apply search filter
+    // Apply search filter using local search for immediate results
     if (_searchQuery.isNotEmpty) {
-      providers = providerProvider.searchProviders(_searchQuery);
+      providers = providerProvider.searchLoadedProviders(_searchQuery);
     }
 
     return providers;

@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/provider_data_provider.dart';
 import '../providers/patient_data_provider.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../models/patient_model.dart';
+import '../screens/admin_user_creation_screen.dart';
 
 class DashboardOverview extends StatelessWidget {
   const DashboardOverview({super.key});
 
   @override
   Widget build(BuildContext context) {
+    if (kDebugMode) {
+      print('📊 DashboardOverview: build() called');
+    }
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,6 +43,54 @@ class DashboardOverview extends StatelessWidget {
   Widget _buildWelcomeSection(BuildContext context) {
     return Consumer<ProviderDataProvider>(
       builder: (context, providerProvider, child) {
+        if (kDebugMode) {
+          print('📊 DashboardOverview: _buildWelcomeSection Consumer called');
+          print('📊 DashboardOverview: providerProvider.error = ${providerProvider.error}');
+          print('📊 DashboardOverview: providerProvider.isLoading = ${providerProvider.isLoading}');
+        }
+        // Show error if there's one
+        if (providerProvider.error != null) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade600, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Error Loading Data',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.red.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  providerProvider.error!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.red.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => providerProvider.refresh(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -86,6 +140,8 @@ class DashboardOverview extends StatelessWidget {
                           providerProvider.totalPendingApprovals.toString(),
                           Icons.pending,
                         ),
+                        const Spacer(),
+                        _buildAdminActionsSection(context),
                       ],
                     ),
                   ],
@@ -200,49 +256,62 @@ class DashboardOverview extends StatelessWidget {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon, color: color, size: 16),
                 ),
                 const Spacer(),
                 Icon(
                   Icons.trending_up,
                   color: AppTheme.successColor,
-                  size: 16,
+                  size: 12,
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textColor,
+            const SizedBox(height: 8),
+            Flexible(
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Flexible(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.secondaryColor,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.secondaryColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              trend,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.successColor,
-                fontWeight: FontWeight.w500,
+            Flexible(
+              child: Text(
+                trend,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.successColor,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -447,10 +516,59 @@ class DashboardOverview extends StatelessWidget {
     );
   }
 
+  Widget _buildAdminActionsSection(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        // Only show admin actions if user is authenticated and is an admin
+        // For now, we'll assume the logged in user is an admin
+        // In the future, this will check the actual user role from Firebase
+        if (!authProvider.isAuthenticated) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AdminUserCreationScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.admin_panel_settings, size: 18),
+              label: const Text('Create Admin User'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.primaryColor,
+                elevation: 2,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Admin Tools',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   List<FlSpot> _generateProgressSpots(List<Patient> patients) {
     // Generate sample data for the chart
     return List.generate(10, (index) {
       return FlSpot(index.toDouble(), 20 + (index * 8) + (index % 3 * 5));
     });
   }
+
+
 }

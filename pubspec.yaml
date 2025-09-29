@@ -36,30 +36,37 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.3.0
   
+  # Firebase Core & Services - Using compatible versions
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.4
+  firebase_auth: ^5.3.1
+  firebase_storage: ^12.3.2
+  firebase_analytics: ^11.3.3
+  
   # State management
   provider: ^6.1.1
   
   # UI Components
-  fl_chart: ^0.68.0
-  data_table_2: ^2.5.10
+  fl_chart: ^0.69.0
+  data_table_2: ^2.5.15
   flutter_staggered_grid_view: ^0.7.0
   
   # Utilities
   intl: ^0.19.0
-  uuid: ^4.2.1
+  uuid: ^4.5.1
   
   # Drag and drop for report builder
   drag_and_drop_lists: ^0.4.2
   
   # File handling
-  path_provider: ^2.1.1
-  share_plus: ^7.2.1
+  path_provider: ^2.1.4
+  share_plus: ^10.0.2
   
   # HTTP requests (for future API integration)
-  http: ^1.1.0
+  http: ^1.2.2
   
   # Local storage
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

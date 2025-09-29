@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart' hide Provider;
 import 'package:medwave_admin/models/provider_model.dart';
@@ -40,6 +41,51 @@ class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
           Expanded(
             child: Consumer<ProviderDataProvider>(
               builder: (context, providerProvider, child) {
+                if (kDebugMode) {
+                  print('🏥 ProviderApprovalsScreen: Consumer builder called');
+                  print('🏥 ProviderApprovalsScreen: providerProvider.error = ${providerProvider.error}');
+                  print('🏥 ProviderApprovalsScreen: providerProvider.isLoading = ${providerProvider.isLoading}');
+                  print('🏥 ProviderApprovalsScreen: pendingApprovals count = ${providerProvider.pendingApprovals.length}');
+                }
+                // Show error if there's one
+                if (providerProvider.error != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red.withOpacity(0.6),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error Loading Applications',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          providerProvider.error!,
+                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            providerProvider.clearError();
+                            providerProvider.refresh();
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 if (providerProvider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -424,15 +470,30 @@ class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
-              providerProvider.approveProvider(provider.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${provider.fullName} has been approved'),
-                  backgroundColor: Colors.green,
-                ),
+              
+              // Use the new Firebase-powered approval method
+              final success = await providerProvider.approveProvider(
+                provider.id,
+                reviewNotes: 'Approved via admin panel',
               );
+              
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${provider.fullName} has been approved successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to approve ${provider.fullName}. Please try again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text('Approve', style: TextStyle(color: Colors.white)),
@@ -443,26 +504,76 @@ class _ProviderApprovalsScreenState extends State<ProviderApprovalsScreen> {
   }
 
   void _rejectProvider(Provider provider, ProviderDataProvider providerProvider) {
+    final TextEditingController reasonController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reject Provider'),
-        content: Text('Are you sure you want to reject ${provider.fullName}?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to reject ${provider.fullName}?'),
+            const SizedBox(height: 16),
+            const Text(
+              'Please provide a reason for rejection:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Enter rejection reason...',
+                contentPadding: EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please provide a rejection reason'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              
               Navigator.of(context).pop();
-              providerProvider.rejectProvider(provider.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${provider.fullName} has been rejected'),
-                  backgroundColor: Colors.red,
-                ),
+              
+              // Use the new Firebase-powered rejection method
+              final success = await providerProvider.rejectProvider(
+                provider.id,
+                reason,
+                reviewNotes: 'Rejected via admin panel',
               );
+              
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${provider.fullName} has been rejected'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to reject ${provider.fullName}. Please try again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Reject', style: TextStyle(color: Colors.white)),

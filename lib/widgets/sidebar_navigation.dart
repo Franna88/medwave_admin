@@ -48,6 +48,18 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       label: 'Analytics',
       index: 4,
     ),
+    NavigationItem(
+      icon: Icons.people_outlined,
+      activeIcon: Icons.people,
+      label: 'Patient Management',
+      index: 5,
+    ),
+    NavigationItem(
+      icon: Icons.admin_panel_settings_outlined,
+      activeIcon: Icons.admin_panel_settings,
+      label: 'Admin Management',
+      index: 6,
+    ),
   ];
 
   @override
@@ -95,7 +107,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       child: Row(
         children: [
           Image.asset(
-            'images/medwave_logo_black.png',
+            'images/medwave_logo_grey.png',
             height: 40,
             width: 120,
             fit: BoxFit.contain,
