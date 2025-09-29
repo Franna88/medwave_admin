@@ -49,16 +49,22 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       index: 4,
     ),
     NavigationItem(
+      icon: Icons.campaign_outlined,
+      activeIcon: Icons.campaign,
+      label: 'Advert Performance',
+      index: 5,
+    ),
+    NavigationItem(
       icon: Icons.people_outlined,
       activeIcon: Icons.people,
       label: 'Patient Management',
-      index: 5,
+      index: 6,
     ),
     NavigationItem(
       icon: Icons.admin_panel_settings_outlined,
       activeIcon: Icons.admin_panel_settings,
       label: 'Admin Management',
-      index: 6,
+      index: 7,
     ),
   ];
 

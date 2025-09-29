@@ -11,6 +11,7 @@ import 'provider_approvals_screen.dart';
 import 'provider_management_screen.dart';
 import 'report_builder_screen.dart';
 import 'analytics_screen.dart';
+import 'advert_performance_screen.dart';
 import 'patient_management_screen.dart';
 import 'admin_management_screen.dart';
 
@@ -355,8 +356,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 4:
         return const AnalyticsScreen();
       case 5:
-        return const PatientManagementScreen();
+        return const AdvertPerformanceScreen();
       case 6:
+        return const PatientManagementScreen();
+      case 7:
         return const AdminManagementScreen();
       default:
         return const DashboardOverview();
@@ -376,8 +379,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 4:
         return 'Analytics';
       case 5:
-        return 'Patient Management';
+        return 'Advert Performance Stats';
       case 6:
+        return 'Patient Management';
+      case 7:
         return 'Admin Management';
       default:
         return 'Dashboard';
